@@ -2,7 +2,7 @@
 #include "prime.h"
 /*
  * result_t is_prime(uint32_t from, uint32_t to) (FOR DEMO PURPOSES)
- * Takes two inputs: int lower and int upper.
+ * Takes two inputs: from and to
  * uint32_t 'from' represents the lower limits of the numbers to be checked
  * uint32_t 'to' represents the upper limits of the numbers to be checked
  * 
@@ -31,11 +31,10 @@ result_t is_prime(uint32_t from, uint32_t to) {
 }
 
 /*
- * result_t weighted_prime_worker(weight_t weight, uint32_t from, uint32_t to)
- * Takes 3 inputs:
+ * result_t weighted_prime_worker(weight_t weight, struct task new_task)
+ * Takes 2 inputs: weight and new_task
  * weight_t weight represent the worker-nodes weight (How quick it is), higher is better. (Max 100)
- * uint32_t 'from' represents the lower limits of the numbers to be checked
- * uint32_t 'to' represents the upper limits of the numbers to be checked
+ * struct task new_task represents the task struct containing the lower and upper limit of the task to be calculated.
  * 
  * Returns the prime count from the lower to upper limit.
  */
@@ -59,7 +58,7 @@ result_t weighted_prime_worker(weight_t weight, struct task new_task) {
 
 /* Custom sleep function for more varity
  * void sleep_ms(double msec)
- * Takes 1 input:
+ * Takes 1 input: msec
  * double msec represents the milliseconds that needs to elapse before the program returns
  */
 void sleep_ms(double msec) {
