@@ -1,5 +1,4 @@
 #include <stdio.h>
-<<<<<<< HEAD
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -7,17 +6,21 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include "shared.h"
+#include <math.h>
 
-#define BUFFER_SIZE 100
 #define PORT 8080
 
-
+int is_prime(int lower, int upper);
 
 int main(void) {
 	int sock, connect_status;
 	ssize_t numRead;
-	const weight_t weight = 2;
-	char buffer[BUFFER_SIZE];
+	weight_t weight = 2;
+	struct result resultn;
+	resultn.result = 5;
+	resultn.task_number = 1;
+	char buffer[sizeof(struct task)];
+	struct task current_task;
 	struct sockaddr_in local_adress, remote_address;
 
 	/* Initialise local socket */
@@ -37,29 +40,20 @@ int main(void) {
 
 	connect_status = connect(sock, (struct sockaddr *)&remote_address, sizeof(remote_address));
 
+	current_task.from = 5;
+	current_task.to = 10;
+	current_task.task_number = 1;
 
 	/* send weight to master */
-	send(sock, weight, sizeof(weight_t), 0);
-	while ( (numRead = recv(sock, buffer, BUFFER_SIZE, 0)) > 0 ){
+	send(sock, &current_task, sizeof(struct task), 0);
+	while ( (numRead = recv(sock, buffer, sizeof(struct task), MSG_WAITALL)) > 0 ){
 		printf("%s", buffer);
 		
-		
 
 
-		memset(buffer, 0, BUFFER_SIZE);
+		memset(buffer, 0, sizeof(struct task));
 	}
-
-=======
-#include <math.h>
-
-int is_prime(int lower, int upper);
-int main(void)
-{
-
->>>>>>> worker-file-is-prime
-	return 0;
 }
-
 /*
  * Function int is_prime(int lower, int upper) (FOR DEMO PURPOSES)
  * Takes two inputs: int lower and int upper.
