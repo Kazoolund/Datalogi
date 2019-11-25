@@ -9,6 +9,7 @@
 #include "shared.h"
 #include "prime.h"
 #include <math.h>
+#include <inttypes.h>
 
 #define ARGV_WEIGHT 1
 
@@ -26,6 +27,13 @@ void socket_run_time(int sock, weight_t weight);
 int main(int argc, char *argv[]) {
 	weight_t worker_weight = 0;
 	int sock;
+
+	if (argc != 2){
+		printf("Remember to input worker weight, exiting.... \n");
+		exit(EXIT_FAILURE);
+	}
+	
+	sscanf(argv[ARGV_WEIGHT], "%" SCNu8, &worker_weight);
 
 	if (worker_weight < 0){
 		printf("no input given for weight exiting....\n");
