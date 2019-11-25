@@ -30,6 +30,7 @@ int main(void)
 	int worker_count;
 	int task_count;
 	int *task_weights;
+	result_t result;
 	struct task *tasks;
 	struct task **task_offsets;
 	struct worker *workers;
@@ -39,8 +40,9 @@ int main(void)
 	task_weights = make_task_weights(tasks, task_count);
 	workers = accept_workers(worker_count);
 	task_offsets = group_tasks(tasks, task_weights, task_count, workers, worker_count);
-	load_balance(tasks, task_count, task_offsets, workers, worker_count);
-	
+	result = load_balance(tasks, task_count, task_offsets, workers, worker_count);
+
+	printf("The number of primes between %d and %d is %d\n", primes_from, primes_to, result);
 	return 0;
 }
 
