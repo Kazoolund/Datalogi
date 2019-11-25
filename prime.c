@@ -23,9 +23,10 @@ result_t is_prime(uint32_t from, uint32_t to) {
 				isprime = 0;
 		}
 
-		if (isprime && number_to_check != 1)
+		if (isprime && number_to_check != 1){
+			printf("Prime: %d\n", number_to_check);
 			count++;
-	}
+	}}
 	
 	return count;
 }
