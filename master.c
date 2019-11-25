@@ -13,13 +13,14 @@ struct worker {
 	weight_t weight;
 };
 
-void assign_task(struct worker worker, struct task *tasks, int task_count, int *completed, int *assigned, int *task_weights);
+void assign_task(struct worker worker, struct task *tasks, struct task *task_offset, int task_count, int *completed, int *assigned);
 void read_input(int *primes_from, int *primes_to, int *task_size, int *worker_count);
 void read_result(struct worker worker, result_t *results, int *completed);
 int *make_task_weights(struct task *tasks, int task_count);
 struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task_count);
+struct task **group_tasks(struct task *tasks, int *task_weights, int task_count, struct worker *workers, int worker_count);
 struct worker *accept_workers(int worker_count);
-result_t load_balance(struct task *tasks, int task_count, int *task_weights, struct worker *workers, int worker_count);
+result_t load_balance(struct task *tasks, int task_count, struct task **task_offsets, struct worker *workers, int worker_count);
 
 int main(void)
 {
@@ -30,14 +31,15 @@ int main(void)
 	int task_count;
 	int *task_weights;
 	struct task *tasks;
+	struct task **task_offsets;
 	struct worker *workers;
-
 
 	read_input(&primes_from, &primes_to, &task_size, &worker_count);
 	tasks = make_tasks(primes_from, primes_to, task_size, &task_count);
 	task_weights = make_task_weights(tasks, task_count);
 	workers = accept_workers(worker_count);
-	load_balance(tasks, task_count, task_weights, workers, worker_count);
+	task_offsets = group_tasks(tasks, task_weights, task_count, workers, worker_count);
+	load_balance(tasks, task_count, task_offsets, workers, worker_count);
 	
 	return 0;
 }
@@ -59,7 +61,6 @@ struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task
 	struct task *tasks;
 	int primes_delta;
 	int i;
-	
 
 	primes_delta = primes_to - primes_from;
 	*task_count = primes_delta / task_size;
@@ -93,7 +94,8 @@ int *make_task_weights(struct task *tasks, int task_count)
 	int *task_weights = calloc(task_count, sizeof(int));
 
 	for (i = 0; i < task_count; i++) {
-		task_weights[i] = tasks[i].to;
+		/* complexity is n^2 */
+		task_weights[i] = (tasks[i].to * tasks[i].to) - (tasks[i].from * tasks[i].from);
 	}
 	
 	return task_weights;
@@ -129,7 +131,42 @@ struct worker *accept_workers(int worker_count)
 	
 }
 
-result_t load_balance(struct task *tasks, int task_count, int *task_weights, struct worker *workers, int worker_count)
+struct task **group_tasks(struct task *tasks, int *task_weights, int task_count, struct worker *workers, int worker_count)
+{
+	int total_task_weight;
+	int total_worker_weight;
+	int i;
+	int group_weight;
+	int task_weight_per_node_weight;
+	int offset;
+	
+	struct task **offsets;
+
+	offsets = malloc(worker_count * sizeof(struct task *));
+
+	for (i = 0, total_task_weight = 0; i < task_count; i++) {
+		total_task_weight += task_weights[i];
+	}
+
+	for (i = 0, total_worker_weight = 0; i < worker_count; i++) {
+		total_worker_weight += workers[i].weight;
+	}
+
+	task_weight_per_node_weight = total_task_weight / total_worker_weight;
+
+	offset = 0;
+	offsets[0] = 0;
+	for (i = 1; i < worker_count; i++) {
+		for (group_weight = 0; group_weight < task_weight_per_node_weight * workers[i-1].weight; offset++) {
+			group_weight += task_weights[i];
+		}
+		offsets[i] = &tasks[offset];
+	}
+	
+	return offsets;
+}
+
+result_t load_balance(struct task *tasks, int task_count, struct task **task_offsets, struct worker *workers, int worker_count)
 {
 	int nfds;
 	int i;
@@ -154,7 +191,9 @@ result_t load_balance(struct task *tasks, int task_count, int *task_weights, str
 	completed = calloc(task_count, sizeof(int));
 	assigned = calloc(task_count, sizeof(int));
 
-	/* Start by giving each worker a task */
+	for (i = 0; i < worker_count; i++) {
+		assign_task(workers[i], tasks, task_offsets[i], task_count, completed, assigned);
+	}
 	
 	completed_tasks = 0;
 	while (completed_tasks < task_count) {
@@ -163,7 +202,7 @@ result_t load_balance(struct task *tasks, int task_count, int *task_weights, str
 			for (i = 0; i < worker_count; i++) {
 				if (FD_ISSET(workers[i].sock, &fd_set)) {
 					read_result(workers[i], results, completed);
-					assign_task(workers[i], tasks, task_count, completed, assigned, task_weights);
+					assign_task(workers[i], tasks, task_offsets[i], task_count, completed, assigned);
 					completed_tasks++;
 				}
 			}
@@ -187,18 +226,30 @@ void read_result(struct worker worker, result_t *results, int *completed)
 	printf("Got result from worker for task %d: %d\n", i, from_worker.result);
 }
 
-void assign_task(struct worker worker, struct task *tasks, int task_count, int *completed, int *assigned, int *task_weights)
+void assign_task(struct worker worker, struct task *tasks, struct task *task_offset, int task_count, int *completed, int *assigned)
 {
 	int i;
+	int i_offset;
 	struct task *task;
 
+	i_offset = (tasks - task_offset) / sizeof(struct task);
 	task = NULL;
-	for (i = 0; i < task_count && task == NULL; i++) {
+	
+	for (i = 0; i + i_offset < task_count && task == NULL; i++) {
+		if (!completed[i + i_offset] && !assigned[i + i_offset]) {
+			task = &task_offset[i];
+		}
+	}
+
+	for (i = 0; i < i_offset && task == NULL; i++) {
 		if (!completed[i] && !assigned[i]) {
-			assigned[i] = 1;
 			task = &tasks[i];
 		}
 	}
-	
-	send(worker.sock, task, sizeof(struct task), 0);
+
+	if (task != NULL) {
+		printf("Sending task %d (from %d to %d) to worker with weight %d\n",
+		       i, task->from, task->to, worker.weight);
+		send(worker.sock, task, sizeof(struct task), 0);
+	}
 }
