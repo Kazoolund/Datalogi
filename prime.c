@@ -1,5 +1,5 @@
 #include "prime.h"
-
+#include "shared.h"
 /*
  * int is_prime(int lower, int upper) (FOR DEMO PURPOSES)
  * Takes two inputs: int lower and int upper.
