@@ -157,12 +157,13 @@ struct task **group_tasks(struct task *tasks, int *task_weights, int task_count,
 	task_weight_per_node_weight = total_task_weight / total_worker_weight;
 
 	offset = 0;
-	offsets[0] = 0;
+	offsets[0] = &tasks[0];
 	for (i = 1; i < worker_count; i++) {
 		for (group_weight = 0; group_weight < task_weight_per_node_weight * workers[i-1].weight; offset++) {
-			group_weight += task_weights[i];
+			group_weight += task_weights[offset];
 		}
 		offsets[i] = &tasks[offset];
+		printf("group offset %d = %p (%d)\n", i, offsets[i], offset);
 	}
 	
 	return offsets;
@@ -180,13 +181,10 @@ result_t load_balance(struct task *tasks, int task_count, struct task **task_off
 	result_t *results;
 	fd_set fd_set;
 	
-	FD_ZERO(&fd_set);
 	for (i = 0, nfds = 0; i < worker_count; i++) {
 		if (workers[i].sock > nfds) {
 			nfds = workers[i].sock;
 		}
-		FD_SET(workers[i].sock, &fd_set);
-
 	}
 	nfds++; /*Manual says to add one to nfds*/
 	results = malloc(sizeof(result_t) * task_count);
@@ -199,6 +197,11 @@ result_t load_balance(struct task *tasks, int task_count, struct task **task_off
 	
 	completed_tasks = 0;
 	while (completed_tasks < task_count) {
+		FD_ZERO(&fd_set);
+		for (i = 0; i < worker_count; i++) {
+			FD_SET(workers[i].sock, &fd_set);
+		}
+		
 		ready = select(nfds, &fd_set, NULL, NULL, NULL);
 		for (; ready > 0; ready--) {
 			for (i = 0; i < worker_count; i++) {
@@ -234,24 +237,32 @@ void assign_task(struct worker worker, struct task *tasks, struct task *task_off
 	int i_offset;
 	struct task *task;
 
-	i_offset = (tasks - task_offset) / sizeof(struct task);
+	i_offset = (task_offset - tasks);
 	task = NULL;
 	
-	for (i = 0; i + i_offset < task_count && task == NULL; i++) {
-		if (!completed[i + i_offset] && !assigned[i + i_offset]) {
-			task = &task_offset[i];
+	for (i = i_offset; i < task_count && task == NULL; i++) {
+		if (!completed[i] && !assigned[i]) {
+			task = &tasks[i];
+			assigned[i] = 1;
+			printf("Sending task %d (from %d to %d) to worker with weight %d\n",
+			       i, task->from, task->to, worker.weight);
+		
 		}
 	}
 
-	for (i = 0; i < i_offset && task == NULL; i++) {
-		if (!completed[i] && !assigned[i]) {
-			task = &tasks[i];
+	if (task == NULL) {
+		for (i = 0; i < i_offset && task == NULL; i++) {
+			if (!completed[i] && !assigned[i]) {
+				task = &tasks[i];
+				assigned[i] = 1;
+				printf("Sending task %d (from %d to %d) to worker with weight %d\n",
+				       i, task->from, task->to, worker.weight);
+
+			}
 		}
 	}
 
 	if (task != NULL) {
-		printf("Sending task %d (from %d to %d) to worker with weight %d\n",
-		       i, task->from, task->to, worker.weight);
 		send(worker.sock, task, sizeof(struct task), 0);
 	}
 }
