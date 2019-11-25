@@ -78,12 +78,12 @@ struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task
 	}
 	for (i = 0; i < *task_count; i++) {
 		tasks[i].task_number = i;
-		tasks[i].from = i * task_size;
+		tasks[i].from = (i * task_size) + 1;
 		/*Makes sure the last task is not too big*/
 		if (i == *task_count - 1) {
 			tasks[i].to = primes_to;
 		} else {
-			tasks[i].to = (i + 1) * task_size - 1;			
+			tasks[i].to = (i + 1) * task_size;			
 		}
 	}
 	return tasks;
