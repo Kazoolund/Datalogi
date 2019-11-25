@@ -72,7 +72,7 @@ void sleep_ms(double msec) {
 	do
 	{
 		clock_t current_clock = clock();
-		time_elapsed = (double)(current_clock - start_time) / CLOCKS_PER_SEC * 1000;
+		time_elapsed = (double)(current_clock - start_time) / CLOCKS_PER_SEC * MILLISECOND_TO_SECOND;
 	} while ( time_elapsed < msec);
 
 }
