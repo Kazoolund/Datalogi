@@ -1,19 +1,19 @@
 #include "prime.h"
 #include "shared.h"
 /*
- * int is_prime(int lower, int upper) (FOR DEMO PURPOSES)
+ * result_t is_prime(uint32_t from, uint32_t to) (FOR DEMO PURPOSES)
  * Takes two inputs: int lower and int upper.
- * int lower represents the lower limits of the numbers to be checked
- * int upper represents the upper limits of the numbers to be checked
+ * uint32_t 'from' represents the lower limits of the numbers to be checked
+ * uint32_t 'to' represents the upper limits of the numbers to be checked
  * 
- * When all numbers from lower to upper has been checked, an int value of the 
+ * When all numbers from variable 'from' to variable 'to has been checked, an int value of the 
  * counted primes is returned.
  */
-int is_prime(int lower, int upper) {
+result_t is_prime(uint32_t from, uint32_t to) {
 	int count = 0;
 	int number_to_check;
 
-	for (number_to_check = lower; number_to_check <= upper; number_to_check++)
+	for (number_to_check = from; number_to_check <= to; number_to_check++)
 	{	
 		int division;
 		int isprime = 1;
@@ -34,22 +34,22 @@ int is_prime(int lower, int upper) {
 }
 
 /*
- * int weighted_prime_worker(int weight, int lower, int upper)
+ * result_t weighted_prime_worker(weight_t weight, uint32_t from, uint32_t to)
  * Takes 3 inputs:
- * int weight represent the worker-nodes weight (How quick it is), higher is better. (Max 100)
- * int lower represents the lower limits of the numbers to be checked
- * int upper represents the upper limits of the numbers to be checked
+ * weight_t weight represent the worker-nodes weight (How quick it is), higher is better. (Max 100)
+ * uint32_t 'from' represents the lower limits of the numbers to be checked
+ * uint32_t 'to' represents the upper limits of the numbers to be checked
  * 
  * Returns the prime count from the lower to upper limit.
  */
-int weighted_prime_worker(int weight, int lower, int upper) {
+result_t weighted_prime_worker(weight_t weight, uint32_t from, uint32_t to) {
 	clock_t start_time = clock();
-	int prime_count = is_prime(lower, upper);
+	result_t prime_count = is_prime(from, to);
 	clock_t end_time = clock();
 	double time_elapsed = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
 	if (weight < MAX_WEIGHT) {
-		int weight_difference = MAX_WEIGHT - weight;
+		weight_t weight_difference = MAX_WEIGHT - weight;
 		double time_multiplier = time_elapsed * weight_difference;
 		double new_time = time_multiplier - time_elapsed;
 
@@ -72,7 +72,7 @@ void sleep_ms(double msec) {
 	do
 	{
 		clock_t current_clock = clock();
-		time_elapsed = (double)(current_clock - start_time) / CLOCKS_PER_SEC * 1000;
+		time_elapsed = (double)(current_clock - start_time) / CLOCKS_PER_SEC * MILLISECOND_TO_SECOND;
 	} while ( time_elapsed < msec);
 
 }
