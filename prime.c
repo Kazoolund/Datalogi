@@ -23,7 +23,7 @@ result_t is_prime(uint32_t from, uint32_t to) {
 				isprime = 0;
 		}
 
-		if (isprime)
+		if (isprime && number_to_check != 1)
 			count++;
 	}
 	
