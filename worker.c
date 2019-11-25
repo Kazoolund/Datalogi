@@ -12,10 +12,7 @@
 
 #define ARGV_WEIGHT 1
 
-#define LOCAL_IP "127.0.0.1"
-#define LOCAL_PORT 8080
 #define REMOTE_IP "127.0.0.1"
-#define REMOTE_PORT 5000
 
 
 struct result do_task(struct task new_task, weight_t weight);
@@ -29,7 +26,6 @@ void socket_run_time(int sock, weight_t weight);
 int main(int argc, char *argv[]) {
 	weight_t worker_weight = 0;
 	int sock;
-	struct sockaddr_in local_address;
 
 	if (worker_weight < 0){
 		printf("no input given for weight exiting....\n");
@@ -37,9 +33,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* initialse socket */
-	local_address.sin_family = AF_INET;
-	local_address.sin_addr.s_addr = inet_addr(LOCAL_IP);
-	local_address.sin_port = LOCAL_PORT;
 	sock = socket(AF_INET, SOCK_STREAM, 0); /* Create client socket */
 
 
@@ -66,7 +59,7 @@ void socket_run_time(int sock, weight_t weight){
 
 	remote_address.sin_family = AF_INET;
 	remote_address.sin_addr.s_addr = inet_addr(REMOTE_IP);
-	remote_address.sin_port = htons(REMOTE_PORT);
+	remote_address.sin_port = htons(LOADBALANCER_PORT);
 	/* Try to connect to master */
 	connection_status = connect_socket_n(sock, remote_address);
 	/* send weight to master */
