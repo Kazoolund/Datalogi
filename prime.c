@@ -1,5 +1,5 @@
-#include "prime.h"
 #include "shared.h"
+#include "prime.h"
 /*
  * result_t is_prime(uint32_t from, uint32_t to) (FOR DEMO PURPOSES)
  * Takes two inputs: int lower and int upper.
@@ -11,18 +11,15 @@
  */
 result_t is_prime(uint32_t from, uint32_t to) {
 	int count = 0;
-	int number_to_check;
+	uint32_t number_to_check;
 
 	for (number_to_check = from; number_to_check <= to; number_to_check++)
 	{	
-		int division;
+		uint32_t division;
 		int isprime = 1;
 		for (division = 1; division < number_to_check; division++)
 		{	
-			double divided = (number_to_check / (double)division); /* One of the integars has to be considered a double to return a double */
-			double fraction = fmod(divided, 1);
-
-			if (division != 1 && division != number_to_check && fraction == 0.00000000)
+			if (division != 1 && division != number_to_check && number_to_check % division == 0)
 				isprime = 0;
 		}
 
@@ -42,9 +39,9 @@ result_t is_prime(uint32_t from, uint32_t to) {
  * 
  * Returns the prime count from the lower to upper limit.
  */
-result_t weighted_prime_worker(weight_t weight, uint32_t from, uint32_t to) {
+result_t weighted_prime_worker(weight_t weight, struct task new_task) {
 	clock_t start_time = clock();
-	result_t prime_count = is_prime(from, to);
+	result_t prime_count = is_prime(new_task.from, new_task.to);
 	clock_t end_time = clock();
 	double time_elapsed = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
