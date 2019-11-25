@@ -80,11 +80,12 @@ void socket_run_time(int sock, weight_t weight){
 
 	
 	while ( (numRead = recv(sock, &buffer, sizeof(struct task), MSG_WAITALL)) > 0 ){
-		
-		printf("from %d, to %d, task num %d\n", buffer.from, buffer.to, buffer.task_number);
-
 		results = do_task(buffer, weight);
+		printf("from %d, to %d, task num %d, number of primes %d\n", buffer.from, buffer.to, buffer.task_number, results.result);
 		send_result(sock, results);
+
+		
+		
 
 	}
 	
