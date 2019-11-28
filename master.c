@@ -20,6 +20,7 @@ enum balance_type {
 };
 
 void assign_task(struct worker worker, struct task *tasks, int *task_offsets, int task_count, int worker_count, int *completed, int *assigned, enum balance_type balance_type);
+void assign_round_robin_task(struct worker worker, struct task *tasks, int task_count, int worker_count, int *completed, int *assigned);
 void read_input(int *primes_from, int *primes_to, int *task_size, int *worker_count, enum balance_type *balance_type);
 void read_result(struct worker worker, result_t *results, int *completed);
 uintmax_t *make_task_weights(struct task *tasks, int task_count, enum balance_type balance_type);
@@ -212,7 +213,13 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 	assigned = calloc(task_count, sizeof(int));
 
 	for (i = 0; i < worker_count; i++) {
-		assign_task(workers[i], tasks, task_offsets, task_count, worker_count, completed, assigned, balance_type);
+		if (balance_type == BALANCE_ROUND) {
+			assign_round_robin_task(workers[i], tasks, task_count, worker_count,
+						completed, assigned);
+		} else {
+			assign_task(workers[i], tasks, task_offsets, task_count,
+				    worker_count, completed, assigned, balance_type);
+		}
 	}
 	
 	completed_tasks = 0;
@@ -227,7 +234,13 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 			for (i = 0; i < worker_count; i++) {
 				if (FD_ISSET(workers[i].sock, &fd_set)) {
 					read_result(workers[i], results, completed);
-					assign_task(workers[i], tasks, task_offsets, task_count, worker_count, completed, assigned, balance_type);
+					if (balance_type == BALANCE_ROUND) {
+						assign_round_robin_task(workers[i], tasks, task_count,
+									worker_count, completed, assigned);
+					} else {
+						assign_task(workers[i], tasks, task_offsets, task_count,
+							    worker_count, completed, assigned, balance_type);
+					}
 					completed_tasks++;
 				}
 			}
@@ -269,7 +282,7 @@ void assign_task(struct worker worker, struct task *tasks, int *task_offsets, in
 	} else if (balance_type == BALANCE_WEIGHTED) {
 		end_offset = task_count;
 	} else {
-		/* Noo, balance_type is wrong */
+		/* Noo, balance_type is wrong. This function should not be run with round robin */
 		printf("Balance_type is not 0 1 or 2!\n");
 		exit(EXIT_FAILURE);
 	}
@@ -297,6 +310,28 @@ void assign_task(struct worker worker, struct task *tasks, int *task_offsets, in
 		}
 	}
 
+	if (task != NULL) {
+		send(worker.sock, task, sizeof(struct task), 0);
+	}
+}
+
+
+void assign_round_robin_task(struct worker worker, struct task *tasks, int task_count, int worker_count, int *completed, int *assigned)
+{
+	int i;
+	struct task *task;
+
+	task = NULL;
+
+	for (i = worker.id; i < task_count && task == NULL; i += worker_count) {
+		if (!assigned[i] && !completed[i]) {
+			task = &tasks[i];
+			assigned[i] = 1;
+			printf("Sending task %d (from %d to %d) to worker with weight %d\n",
+			       i, task->from, task->to, worker.weight);
+		}
+	}
+	
 	if (task != NULL) {
 		send(worker.sock, task, sizeof(struct task), 0);
 	}
