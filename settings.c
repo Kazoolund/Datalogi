@@ -42,7 +42,9 @@ void settings_print(struct settings * setting) {
  * This function simply initializes the settings variable based on the settings.txt file.
  * 
  * Returns the a settings pointer based on the settings.txt file.
- * NOTE: Remember to free() the pointer when it isn't in use anymore.
+ * NOTE: Remember to free() the pointer AND the weights array pointer when it isn't in use anymore.
+ *       free(setting->worker_weights);
+ *       free(setting);
  */
 struct settings * load_settings_file() {
     struct settings * setting_vars = malloc(sizeof(struct settings));
