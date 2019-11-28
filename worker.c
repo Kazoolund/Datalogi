@@ -19,7 +19,6 @@
 struct result do_task(struct task new_task, weight_t weight);
 int connect_socket_n(int sock, struct sockaddr_in remote_address );
 int send_result(int sock, struct result send_message);
-struct task wait_for_next_task(int sock);
 
 void socket_run_time(int sock, weight_t weight);
 
@@ -63,7 +62,6 @@ void socket_run_time(int sock, weight_t weight){
 	ssize_t numRead;
 	int connection_status;
 	int initial_send;
-	int send_result_n;
 
 	remote_address.sin_family = AF_INET;
 	remote_address.sin_addr.s_addr = inet_addr(REMOTE_IP);
@@ -78,14 +76,10 @@ void socket_run_time(int sock, weight_t weight){
 		exit(EXIT_FAILURE);
 	}
 
-	
 	while ( (numRead = recv(sock, &buffer, sizeof(struct task), MSG_WAITALL)) > 0 ){
 		results = do_task(buffer, weight);
 		printf("from %d, to %d, task num %d, number of primes %d\n", buffer.from, buffer.to, buffer.task_number, results.result);
 		send_result(sock, results);
-
-		
-		
 
 	}
 	
@@ -115,16 +109,4 @@ int send_result(int sock, struct result send_message){
 		return send_result(sock, send_message);
 	}
 	return send_status;
-}
-
-struct task wait_for_next_task(int sock){
-	struct task buffer;
-	ssize_t numRead;
-	while ( (numRead = recv(sock, &buffer, sizeof(struct task), MSG_WAITALL)) > 0 ){
-		if (buffer.task_number != 0 && buffer.from > 0 && buffer.to > 0){
-			break;
-		}
-
-	}
-	return buffer;
 }
