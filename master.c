@@ -11,6 +11,7 @@
 struct worker {
 	int sock;
 	weight_t weight;
+	int completed_tasks;
 };
 
 void assign_task(struct worker worker, struct task *tasks, struct task *task_offset, int task_count, int *completed, int *assigned);
@@ -21,6 +22,11 @@ struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task
 struct task **group_tasks(struct task *tasks, int *task_weights, int task_count, struct worker *workers, int worker_count);
 struct worker *accept_workers(int worker_count);
 result_t load_balance(struct task *tasks, int task_count, struct task **task_offsets, struct worker *workers, int worker_count);
+
+void print_results(struct worker *workers, int number_of_workers, int completed_tasks, result_t *number_of_primes);
+void print_delimiter();
+void print_header(int number_of_workers, int completed_tasks);
+void print_worker_result(struct worker worker, int work_number);
 
 int main(void)
 {
@@ -124,6 +130,7 @@ struct worker *accept_workers(int worker_count)
 	bind(listen_socket, (struct sockaddr *)&addr, sizeof(addr));
 	listen(listen_socket, 10); /*Max 10 in queue*/
 	for (i = 0; i < worker_count; i++) {
+		workers[i].completed_tasks = 0;
 		workers[i].sock = accept(listen_socket, NULL, 0);
 		recv(workers[i].sock, &workers[i].weight, sizeof(weight_t), MSG_WAITALL);
 		printf("Accepted worker %d of %d\n", i+1, worker_count);
@@ -209,6 +216,7 @@ result_t load_balance(struct task *tasks, int task_count, struct task **task_off
 					read_result(workers[i], results, completed);
 					assign_task(workers[i], tasks, task_offsets[i], task_count, completed, assigned);
 					completed_tasks++;
+					workers[i].completed_tasks +=1;
 				}
 			}
 		}
@@ -217,6 +225,7 @@ result_t load_balance(struct task *tasks, int task_count, struct task **task_off
 	for (i = 0, total_primes = 0; i < task_count; i++) {
 		total_primes += results[i];
 	}
+	print_results(workers, worker_count, completed_tasks, *results);
 	return total_primes;
 }
 
@@ -265,4 +274,34 @@ void assign_task(struct worker worker, struct task *tasks, struct task *task_off
 	if (task != NULL) {
 		send(worker.sock, task, sizeof(struct task), 0);
 	}
+}
+
+void print_delimiter(){
+	printf("-------------------------------------------------\n");
+}
+void print_header(int number_of_workers, int completed_tasks){
+	print_delimiter();
+	printf("|%15s|%15s|%15s|\n", "Workers", "Total tasks", "Total runtime");
+	print_delimiter();
+	printf("|%15d|%15d|%15lf|\n", number_of_workers, completed_tasks, 3000.00);
+	print_delimiter();
+}
+void print_worker_result(struct worker worker, int work_number){
+	print_delimiter();
+	printf("|%15d|%15d|%15d|\n", work_number, worker.weight, worker.completed_tasks);
+}
+void print_results(struct worker *workers, int number_of_workers, int completed_tasks, result_t *number_of_primes){
+	int i;
+	/* Total Header */
+	print_header(number_of_workers, completed_tasks);
+	/* Work header */
+	printf("|%15s|%15s|%15s|\n", "Worker", "Weight", "Tasks Completed");
+	for ( i = 0; i < number_of_workers; i++){
+		print_worker_result(workers[i], i);
+	}
+	
+	print_delimiter();
+	printf("%d", number_of_primes);
+
+
 }
