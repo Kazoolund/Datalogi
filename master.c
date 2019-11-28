@@ -41,7 +41,7 @@ struct worker *accept_workers(int worker_count, enum balance_type balance_type);
 result_t load_balance(struct task *tasks, int task_count, int *task_offsets, struct worker *workers, int worker_count, enum balance_type balance_type);
 
 void print_results(struct worker *workers, int number_of_workers, int number_of_primes, int primes_from, int primes_to, time_t total_time, enum balance_type algo);
-void print_delimiter();
+void print_delimiter(int position);
 void print_header(int number_of_workers, int completed_tasks, time_t total_time, enum balance_type algo);
 void print_worker_result(struct worker worker, int work_number);
 
@@ -231,7 +231,7 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 	result_t total_primes;
 	result_t *results;
 	fd_set fd_set;
-	
+
 	for (i = 0, nfds = 0; i < worker_count; i++) {
 		if (workers[i].sock > nfds) {
 			nfds = workers[i].sock;
@@ -251,7 +251,8 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 				    worker_count, completed, assigned, balance_type);
 		}
 	}
-	
+
+	printf("Progress: ");
 	completed_tasks = 0;
 	while (completed_tasks < task_count) {
 		FD_ZERO(&fd_set);
@@ -278,8 +279,14 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 				}
 			}
 		}
+
+		if (completed_tasks % (task_count / 62) == 0) {
+			printf("\u2588");
+			fflush(stdout);
+		}
 	}
 
+	printf("\n");
 	for (i = 0, total_primes = 0; i < task_count; i++) {
 		total_primes += results[i];
 	}
@@ -349,24 +356,56 @@ void assign_task(struct worker worker, struct task *tasks, int *task_offsets, in
 	}
 }
 
-void print_delimiter(){
-	printf("-------------------------------------------------------------------------\n");
+void print_delimiter(int position){
+	int i;
+	
+	for (i = 0; i <= 72; i++) {
+		if (position == 0) { /* top */
+			if (i == 0)
+				printf("\u250C");
+			else if (i == 18 || i == 36 || i == 54)
+				printf("\u252C");
+			else if (i == 72)
+				printf("\u2510");
+			else
+				printf("\u2500");
+		} else if (position == 1) { /* middle */
+			if (i == 0)				
+				printf("\u251C");
+			else if (i == 18 || i == 36 || i == 54)
+				printf("\u253C");
+			else if (i == 72)
+				printf("\u2524");
+			else
+				printf("\u2500");
+		} else if (position == 2) { /* end */
+			if (i == 0)				
+				printf("\u2514");
+			else if (i == 18 || i == 36 || i == 54)
+				printf("\u2534");
+			else if (i == 72)
+				printf("\u2518");
+			else
+				printf("\u2500");
+		}
+	}
+	printf("\n");
 }
 
 void print_header(int number_of_workers, int completed_tasks, time_t total_time, enum balance_type algo){
-	print_delimiter();
-	printf("| %-15s | %-15s | %-15s | %-15s |\n", "Workers", "Total tasks", "Total runtime", "Algorithm");
-	print_delimiter();
-	printf("| %15d | %15d | %11ld sec | %-15s |\n", number_of_workers, completed_tasks, total_time, algorithm_names[algo]);
-	print_delimiter();
+	print_delimiter(0);
+	printf("\u2502 %-15s \u2502 %-15s \u2502 %-15s \u2502 %-15s \u2502\n", "Workers", "Total tasks", "Total runtime", "Algorithm");
+	print_delimiter(1);
+	printf("\u2502 %15d \u2502 %15d \u2502 %11ld sec \u2502 %-15s \u2502\n", number_of_workers, completed_tasks, total_time, algorithm_names[algo]);
+	print_delimiter(2);
 }
 
 void print_worker_result(struct worker worker, int work_number){
 	time_t time_wasted;
-	print_delimiter();
+	print_delimiter(1);
 
 	time_wasted = time(NULL) - worker.done_time;
-	printf("| %15d | %15d | %15d | %11ld sec |\n", work_number, worker.real_weight, worker.completed_tasks, time_wasted);
+	printf("\u2502 %15d \u2502 %15d \u2502 %15d \u2502 %11ld sec \u2502\n", work_number, worker.real_weight, worker.completed_tasks, time_wasted);
 }
 
 void print_results(struct worker *workers, int number_of_workers, int number_of_primes, int primes_from, int primes_to, time_t total_time, enum balance_type algo) {
@@ -382,25 +421,25 @@ void print_results(struct worker *workers, int number_of_workers, int number_of_
 
 	/* Spacing */
 	printf("\n");
-	print_delimiter();
+	print_delimiter(0);
 	
 	/* Work header */
-	printf("| %-15s | %-15s | %-15s | %-15s |\n", "Worker", "Weight", "Tasks Completed", "Time wasted");
+	printf("\u2502 %-15s \u2502 %-15s \u2502 %-15s \u2502 %-15s \u2502\n", "Worker", "Weight", "Tasks Completed", "Time wasted");
 	for ( i = 0; i < number_of_workers; i++){
 		print_worker_result(workers[i], i);
 	}
 
 	/* Spacing */
-	print_delimiter();
+	print_delimiter(2);
 	printf("\n");
-	print_delimiter();
+	print_delimiter(0);
 	
 	/* Prime result header */
-	printf("| %-15s | %-15s | %-15s | %-15s |\n", "Primes from", "Primes to", "Ints to check", "Result");
-	print_delimiter();
-	printf("| %15d | %15d | %15d | %15d |\n", primes_from, primes_to, (primes_to - primes_from + 1), number_of_primes);
+	printf("\u2502 %-15s \u2502 %-15s \u2502 %-15s \u2502 %-15s \u2502\n", "Primes from", "Primes to", "Ints to check", "Result");
+	print_delimiter(1);
+	printf("\u2502 %15d \u2502 %15d \u2502 %15d \u2502 %15d \u2502\n", primes_from, primes_to, (primes_to - primes_from + 1), number_of_primes);
 	
-	print_delimiter();
+	print_delimiter(2);
 }
 
 void assign_round_robin_task(struct worker worker, struct task *tasks, int task_count, int worker_count, int *completed, int *assigned)
@@ -423,4 +462,3 @@ void assign_round_robin_task(struct worker worker, struct task *tasks, int task_
 		send(worker.sock, task, sizeof(struct task), 0);
 	}
 }
-
