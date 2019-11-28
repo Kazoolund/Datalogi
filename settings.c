@@ -1,6 +1,29 @@
 #include "shared.h"
 #include "settings.h"
 
+/* How to use:
+ * Simply initialize a struct settings variable with load_settings_file()
+ * Eksample: struct settings settings_variable = load_settings_file();
+ * 
+ * Structure:
+ *          char IP[16];
+ *          uint32_t PORT;
+ *          struct task task_limits; - From the shared.h header
+ *                  uint32_t from;
+ *                  uint32_t to;
+ *                  uint16_t task_number;
+ *          uint16_t workers;
+ *          uint16_t *worker_weights;
+ */
+
+
+/*
+ * void settings_print(struct settings * setting)
+ * Takes 1 variable: setting
+ * setting represents the setting struct which is initialized through the load_settings_file() function.
+ * 
+ * Prints out all active settings in the variable.
+ */
 void settings_print(struct settings * setting) {
     printf("\nIP: %s", setting->IP);
     printf("\nPORT: %d", setting->PORT);
@@ -13,6 +36,14 @@ void settings_print(struct settings * setting) {
     }
 }
 
+/*
+ * struct settings * load_settings_file()
+ * Takes 0 variables:
+ * This function simply initializes the settings variable based on the settings.txt file.
+ * 
+ * Returns the a settings pointer based on the settings.txt file.
+ * NOTE: Remember to free() the pointer when it isn't in use anymore.
+ */
 struct settings * load_settings_file() {
     struct settings * setting_vars = malloc(sizeof(struct settings));
     FILE * file_pointer = fopen(SETTINGS_FILE, "r");
@@ -60,6 +91,13 @@ struct settings * load_settings_file() {
     return setting_vars;
 }
 
+/*
+ * char * get_current_setting(char * string)
+ * Takes 1 variable: string
+ * string represents the string line currently being analyzed from the settings.txt file
+ * 
+ * Returns the current settings header, eks: IP, PORT, etc.
+ */
 char * get_current_setting(char * string) {
     static char output[15];
     sscanf(string, "%[A-Z]=", output);
@@ -67,10 +105,20 @@ char * get_current_setting(char * string) {
     return output; 
 }
 
+/*
+ * void settings_worker_weights(uint16_t * weights, uint16_t workers,const char* str)
+ * Takes 3 variables: weights, workers and str
+ * weights represents the weight array for each worker expected based on the settings.txt file.
+ * workers represents the amount of workers expected based on the settings.txt file.
+ * str represents the weight string read from the settings.txt file.
+ * 
+ * The function sets all weights in the order specified in the settings.txt file. Left to right.
+ */
 void settings_worker_weights(uint16_t * weights, uint16_t workers,const char* str) {
     char* temp = str;
     const char delim[2] = ",";
     int i = 0;
+    
     temp = strtok(temp, "=");
     while (temp != NULL)
     {

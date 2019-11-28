@@ -8,9 +8,6 @@
 struct settings {
     char IP[16];
     uint32_t PORT;
-
-    uint32_t from;
-    uint32_t to;
     struct task task_limits;
     uint16_t workers;
     uint16_t *worker_weights;
