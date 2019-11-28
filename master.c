@@ -254,7 +254,6 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 	
 	completed_tasks = 0;
 	while (completed_tasks < task_count) {
-		printf(".%d", completed_tasks);
 		FD_ZERO(&fd_set);
 		for (i = 0; i < worker_count; i++) {
 			FD_SET(workers[i].sock, &fd_set);
@@ -262,11 +261,9 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 		
 		ready = select(nfds, &fd_set, NULL, NULL, NULL);
 		for (; ready > 0; ready--) {
-			printf("-");
 			for (i = 0; i < worker_count; i++) {
-				printf(";");
 				if (FD_ISSET(workers[i].sock, &fd_set)) {
-					printf("_");
+					FD_CLR(workers[i].sock, &fd_set);
 					read_result(workers[i], results, completed);
 					workers[i].done_time = time(NULL);
 					if (balance_type == BALANCE_ROUND) {
@@ -353,7 +350,7 @@ void assign_task(struct worker worker, struct task *tasks, int *task_offsets, in
 }
 
 void print_delimiter(){
-	printf("------------------------------------------------------------------------\n");
+	printf("-------------------------------------------------------------------------\n");
 }
 
 void print_header(int number_of_workers, int completed_tasks, time_t total_time, enum balance_type algo){
