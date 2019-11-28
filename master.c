@@ -5,11 +5,13 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 #include "shared.h"
 
 struct worker {
 	int sock;
 	int id;
+	time_t done_time;
 	weight_t weight;
 };
 
@@ -36,9 +38,12 @@ int main(void)
 	int task_size;
 	int worker_count;
 	int task_count;
+	int i;
 	uintmax_t *task_weights;
 	int *task_offsets;
 	result_t result;
+	time_t start_clock;
+	time_t end_clock;
 	struct task *tasks;
 	struct worker *workers;
 	enum balance_type balance_type;
@@ -48,8 +53,15 @@ int main(void)
 	task_weights = make_task_weights(tasks, task_count, balance_type);
 	workers = accept_workers(worker_count, balance_type);
 	task_offsets = group_tasks(task_weights, task_count, workers, worker_count);
-	result = load_balance(tasks, task_count, task_offsets, workers, worker_count, balance_type);
 
+	start_clock = time(NULL);
+	result = load_balance(tasks, task_count, task_offsets, workers, worker_count, balance_type);
+	end_clock = time(NULL);
+
+	printf("Total time used = %ld\n", end_clock - start_clock);
+	for (i = 0; i < worker_count; i++) {
+		printf("Worker %d wasted %ld seconds\n", i, end_clock - workers[i].done_time);
+	}
 	printf("The number of primes between %d and %d is %d\n", primes_from, primes_to, result);
 	return 0;
 }
@@ -143,6 +155,7 @@ struct worker *accept_workers(int worker_count, enum balance_type balance_type)
 	for (i = 0; i < worker_count; i++) {
 		workers[i].sock = accept(listen_socket, NULL, 0);
 		workers[i].id = i;
+		workers[i].done_time = -1;
 		recv(workers[i].sock, &workers[i].weight, sizeof(weight_t), MSG_WAITALL);
 		
 		if (balance_type != BALANCE_WEIGHTED)
@@ -234,6 +247,7 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 			for (i = 0; i < worker_count; i++) {
 				if (FD_ISSET(workers[i].sock, &fd_set)) {
 					read_result(workers[i], results, completed);
+					workers[i].done_time = time(NULL);
 					if (balance_type == BALANCE_ROUND) {
 						assign_round_robin_task(workers[i], tasks, task_count,
 									worker_count, completed, assigned);
@@ -303,8 +317,8 @@ void assign_task(struct worker worker, struct task *tasks, int *task_offsets, in
 			if (!completed[i] && !assigned[i]) {
 				task = &tasks[i];
 				assigned[i] = 1;
-				printf("Sending task %d (from %d to %d) to worker with weight %d\n",
-				       i, task->from, task->to, worker.weight);
+				printf("Sending task %d (from %d to %d) to worker %d with weight %d\n",
+				       i, task->from, task->to, worker.id, worker.weight);
 
 			}
 		}
@@ -327,8 +341,8 @@ void assign_round_robin_task(struct worker worker, struct task *tasks, int task_
 		if (!assigned[i] && !completed[i]) {
 			task = &tasks[i];
 			assigned[i] = 1;
-			printf("Sending task %d (from %d to %d) to worker with weight %d\n",
-			       i, task->from, task->to, worker.weight);
+			printf("Sending task %d (from %d to %d) to worker %d with weight %d\n",
+			       i, task->from, task->to, worker.id, worker.weight);
 		}
 	}
 	

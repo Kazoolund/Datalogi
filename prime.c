@@ -49,8 +49,7 @@ result_t weighted_prime_worker(weight_t weight, struct task new_task) {
 		double new_time = (MAX_WEIGHT/weight) * time_elapsed;
 		double sleeptime = new_time - time_elapsed;
 
-		if (new_time > 1)
-			sleep_ms(sleeptime * MILLISECOND_TO_SECOND);
+		sleep_ms(sleeptime * MILLISECOND_TO_SECOND);
 
 	}
 	return prime_count;
