@@ -9,17 +9,24 @@
 
 struct worker {
 	int sock;
+	int id;
 	weight_t weight;
 };
 
-void assign_task(struct worker worker, struct task *tasks, int task_offset, int task_count, int *completed, int *assigned);
-void read_input(int *primes_from, int *primes_to, int *task_size, int *worker_count);
+enum balance_type {
+	BALANCE_NONE,
+	BALANCE_ROUND,
+	BALANCE_WEIGHTED
+};
+
+void assign_task(struct worker worker, struct task *tasks, int *task_offsets, int task_count, int worker_count, int *completed, int *assigned, enum balance_type balance_type);
+void read_input(int *primes_from, int *primes_to, int *task_size, int *worker_count, enum balance_type *balance_type);
 void read_result(struct worker worker, result_t *results, int *completed);
-uintmax_t *make_task_weights(struct task *tasks, int task_count);
+uintmax_t *make_task_weights(struct task *tasks, int task_count, enum balance_type balance_type);
 int *group_tasks(uintmax_t *task_weights, int task_count, struct worker *workers, int worker_count);
 struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task_count);
-struct worker *accept_workers(int worker_count);
-result_t load_balance(struct task *tasks, int task_count, int *task_offsets, struct worker *workers, int worker_count);
+struct worker *accept_workers(int worker_count, enum balance_type balance_type);
+result_t load_balance(struct task *tasks, int task_count, int *task_offsets, struct worker *workers, int worker_count, enum balance_type balance_type);
 
 int main(void)
 {
@@ -33,22 +40,24 @@ int main(void)
 	result_t result;
 	struct task *tasks;
 	struct worker *workers;
+	enum balance_type balance_type;
 
-	read_input(&primes_from, &primes_to, &task_size, &worker_count);
+	read_input(&primes_from, &primes_to, &task_size, &worker_count, &balance_type);
 	tasks = make_tasks(primes_from, primes_to, task_size, &task_count);
-	task_weights = make_task_weights(tasks, task_count);
-	workers = accept_workers(worker_count);
+	task_weights = make_task_weights(tasks, task_count, balance_type);
+	workers = accept_workers(worker_count, balance_type);
 	task_offsets = group_tasks(task_weights, task_count, workers, worker_count);
-	result = load_balance(tasks, task_count, task_offsets, workers, worker_count);
+	result = load_balance(tasks, task_count, task_offsets, workers, worker_count, balance_type);
 
 	printf("The number of primes between %d and %d is %d\n", primes_from, primes_to, result);
 	return 0;
 }
 
-
-void read_input(int *primes_from, int *primes_to, int *task_size, int *worker_count)
+void read_input(int *primes_from, int *primes_to, int *task_size, int *worker_count, enum balance_type *balance_type)
 {
 	/*Only takes input, doesn't check it.*/
+	printf("What type of balancing do you want? (0 = none, 1 = round robin, 2 = weighted least connections): ");
+	scanf("%d", (int *)balance_type);
 	printf("Enter the range of numbers you want to check for primes (ex. 1 1000000): ");
 	scanf("%d %d", primes_from, primes_to);
 	printf("Enter task size (ex. 100): ");
@@ -89,23 +98,29 @@ struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task
 	
 }
 
-uintmax_t *make_task_weights(struct task *tasks, int task_count)
+uintmax_t *make_task_weights(struct task *tasks, int task_count, enum balance_type balance_type)
 {
 	int i;
 	uintmax_t *task_weights = calloc(task_count, sizeof(uintmax_t));
 
 	for (i = 0; i < task_count; i++) {
-		/* complexity is n^2 */
-		task_weights[i] = (tasks[i].to * tasks[i].to) - (tasks[i].from * tasks[i].from);
+		if (balance_type == BALANCE_WEIGHTED) {
+			/* complexity is n^2 */
+			task_weights[i] = (tasks[i].to * tasks[i].to) - (tasks[i].from * tasks[i].from);
+		} else {
+			task_weights[i] = 1;
+		}
 	}
-	
+
+
 	return task_weights;
 }
 
-struct worker *accept_workers(int worker_count)
+struct worker *accept_workers(int worker_count, enum balance_type balance_type)
 {
 	int listen_socket;
 	int i;
+	int enable;
 	struct worker *workers;
 	struct sockaddr_in addr;
 
@@ -120,11 +135,18 @@ struct worker *accept_workers(int worker_count)
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	
 	listen_socket = socket(AF_INET, SOCK_STREAM, 0);
+	enable = 1;
+	setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 	bind(listen_socket, (struct sockaddr *)&addr, sizeof(addr));
 	listen(listen_socket, 10); /*Max 10 in queue*/
 	for (i = 0; i < worker_count; i++) {
 		workers[i].sock = accept(listen_socket, NULL, 0);
+		workers[i].id = i;
 		recv(workers[i].sock, &workers[i].weight, sizeof(weight_t), MSG_WAITALL);
+		
+		if (balance_type != BALANCE_WEIGHTED)
+			workers[i].weight = 1;
+		
 		printf("Accepted worker %d of %d\n", i+1, worker_count);
 	}
 
@@ -167,7 +189,7 @@ int *group_tasks(uintmax_t *task_weights, int task_count, struct worker *workers
 	return offsets;
 }
 
-result_t load_balance(struct task *tasks, int task_count, int *task_offsets, struct worker *workers, int worker_count)
+result_t load_balance(struct task *tasks, int task_count, int *task_offsets, struct worker *workers, int worker_count, enum balance_type balance_type)
 {
 	int nfds;
 	int i;
@@ -190,7 +212,7 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 	assigned = calloc(task_count, sizeof(int));
 
 	for (i = 0; i < worker_count; i++) {
-		assign_task(workers[i], tasks, task_offsets[i], task_count, completed, assigned);
+		assign_task(workers[i], tasks, task_offsets, task_count, worker_count, completed, assigned, balance_type);
 	}
 	
 	completed_tasks = 0;
@@ -205,7 +227,7 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 			for (i = 0; i < worker_count; i++) {
 				if (FD_ISSET(workers[i].sock, &fd_set)) {
 					read_result(workers[i], results, completed);
-					assign_task(workers[i], tasks, task_offsets[i], task_count, completed, assigned);
+					assign_task(workers[i], tasks, task_offsets, task_count, worker_count, completed, assigned, balance_type);
 					completed_tasks++;
 				}
 			}
@@ -229,14 +251,31 @@ void read_result(struct worker worker, result_t *results, int *completed)
 	printf("Got result from worker for task %d: %d\n", i, from_worker.result);
 }
 
-void assign_task(struct worker worker, struct task *tasks, int task_offset, int task_count, int *completed, int *assigned)
+void assign_task(struct worker worker, struct task *tasks, int *task_offsets, int task_count, int worker_count, int *completed, int *assigned, enum balance_type balance_type)
 {
 	int i;
+	int end_offset;
+	int task_offset;
 	struct task *task;
-
-	task = NULL;
 	
-	for (i = task_offset; i < task_count && task == NULL; i++) {
+	task = NULL;
+	task_offset = task_offsets[worker.id];
+	
+	if (balance_type == BALANCE_NONE) {
+		if (worker.id + 1 == worker_count)
+			end_offset = task_count;
+		else
+			end_offset = task_offsets[worker.id+1];
+	} else if (balance_type == BALANCE_WEIGHTED) {
+		end_offset = task_count;
+	} else {
+		/* Noo, balance_type is wrong */
+		printf("Balance_type is not 0 1 or 2!\n");
+		exit(EXIT_FAILURE);
+	}
+		
+	
+	for (i = task_offset; i < end_offset && task == NULL; i++) {
 		if (!completed[i] && !assigned[i]) {
 			task = &tasks[i];
 			assigned[i] = 1;
@@ -246,7 +285,7 @@ void assign_task(struct worker worker, struct task *tasks, int task_offset, int 
 		}
 	}
 
-	if (task == NULL) {
+	if (task == NULL && balance_type == BALANCE_WEIGHTED) {
 		for (i = 0; i < task_offset && task == NULL; i++) {
 			if (!completed[i] && !assigned[i]) {
 				task = &tasks[i];
