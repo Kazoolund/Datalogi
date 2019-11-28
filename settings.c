@@ -3,7 +3,7 @@
 
 /* How to use:
  * Simply initialize a struct settings variable with load_settings_file()
- * Eksample: struct settings settings_variable = load_settings_file();
+ * Eksample: struct settings * settings_variable = load_settings_file();
  * 
  * Structure:
  *          char IP[16];
@@ -114,11 +114,11 @@ char * get_current_setting(char * string) {
  * 
  * The function sets all weights in the order specified in the settings.txt file. Left to right.
  */
-void settings_worker_weights(uint16_t * weights, uint16_t workers,const char* str) {
+void settings_worker_weights(uint16_t * weights, uint16_t workers, char* str) {
     char* temp = str;
     const char delim[2] = ",";
     int i = 0;
-    
+
     temp = strtok(temp, "=");
     while (temp != NULL)
     {

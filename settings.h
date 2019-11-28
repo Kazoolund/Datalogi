@@ -16,4 +16,4 @@ struct settings {
 struct settings * load_settings_file();
 void settings_print(struct settings * setting);
 char * get_current_setting(char * string);
-void settings_worker_weights(uint16_t * weights, uint16_t workers,const char* str);
+void settings_worker_weights(uint16_t * weights, uint16_t workers, char* str);
