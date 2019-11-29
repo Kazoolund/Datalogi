@@ -14,6 +14,10 @@
  *                  uint16_t task_number;
  *          uint16_t workers;
  *          uint16_t *worker_weights;
+ * 
+ * NOTE: Remember to free() the struct pointer AND the weights array pointer when it isn't in use anymore.
+ *       free(setting->worker_weights);
+ *       free(setting);
  */
 
 
@@ -25,6 +29,7 @@
  * Prints out all active settings in the variable.
  */
 void settings_print(struct settings * setting) {
+    printf("Settings: \n");
     printf("\nIP: %s", setting->IP);
     printf("\nPORT: %d", setting->PORT);
     printf("\nTASKSIZE: %d", setting->task_limits.task_number);
