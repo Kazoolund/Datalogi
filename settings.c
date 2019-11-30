@@ -41,7 +41,7 @@ void settings_print(struct settings * setting) {
 	printf("\nTASKSIZE: %d", setting->task_limits.task_number);
 	printf("\nTASKRANGE: %d - %d", setting->task_limits.from, setting->task_limits.to);
 	printf("\nWORKERS: %d", setting->workers);
-	for (int i = 1; i <= setting->workers; i++)
+	for (int i = 0; i < setting->workers; i++)
 	{
 		printf("\nWORKER %d Weight: %d", i, setting->worker_weights[i]);
 	}
@@ -83,7 +83,7 @@ struct settings * load_settings_file() {
 			} else if (strcmp(option, "WORKERS") == 0) {
 				sscanf(str, "WORKERS=%" SCNu16, &setting_vars->workers);
 			} else if (strcmp(option, "WORKERWEIGHT") == 0) {
-				setting_vars->worker_weights = calloc(setting_vars->workers, sizeof(uint16_t));
+				setting_vars->worker_weights = calloc(setting_vars->workers, sizeof(weight_t));
 				settings_worker_weights(setting_vars->worker_weights, setting_vars->workers, str);
 			}
 		}
@@ -109,7 +109,7 @@ char * get_current_setting(char * string) {
 }
 
 /*
- * void settings_worker_weights(uint16_t * weights, uint16_t workers,const char* str)
+ * void settings_worker_weights(weight_t *weights, uint16_t workers,const char* str)
  * Takes 3 variables: weights, workers and str
  * weights represents the weight array for each worker expected based on the settings.txt file.
  * workers represents the amount of workers expected based on the settings.txt file.
@@ -117,7 +117,7 @@ char * get_current_setting(char * string) {
  * 
  * The function sets all weights in the order specified in the settings.txt file. Left to right.
  */
-void settings_worker_weights(uint16_t * weights, uint16_t workers, char* str) {
+void settings_worker_weights(weight_t *weights, uint16_t workers, char* str) {
 	char* temp = str;
 	const char delim[2] = ",";
 	int i = 0;
@@ -126,7 +126,7 @@ void settings_worker_weights(uint16_t * weights, uint16_t workers, char* str) {
 	while (temp != NULL)
 	{
 		if(strcmp(temp, "WORKERWEIGHT")) {
-			weights[i] = atoi(temp);
+			weights[i-1] = atoi(temp);
 		}
 		temp = strtok(NULL, delim);
 		i++;

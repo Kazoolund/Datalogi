@@ -5,7 +5,9 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include "shared.h"
 #include "settings.h"
@@ -39,7 +41,7 @@ void read_result(struct worker worker, result_t *results, int *completed);
 uintmax_t *make_task_weights(struct task *tasks, int task_count, enum balance_type balance_type);
 int *group_tasks(uintmax_t *task_weights, int task_count, struct worker *workers, int worker_count);
 struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task_count);
-struct worker *accept_workers(int worker_count, enum balance_type balance_type);
+struct worker *accept_workers(int worker_count, weight_t *worker_weights, enum balance_type balance_type);
 result_t load_balance(struct task *tasks, int task_count, int *task_offsets, struct worker *workers, int worker_count, enum balance_type balance_type);
 
 void print_results(struct worker *workers, int number_of_workers, int number_of_primes, int primes_from, int primes_to, time_t total_time, enum balance_type algo);
@@ -78,7 +80,7 @@ int main(void)
 	printf("Task count: %d\n", task_count);
 	
 	task_weights = make_task_weights(tasks, task_count, balance_type);
-	workers = accept_workers(settings->workers, balance_type);
+	workers = accept_workers(settings->workers, settings->worker_weights, balance_type);
 	task_offsets = group_tasks(task_weights, task_count, workers, settings->workers);
 
 	start_clock = time(NULL);
@@ -159,13 +161,14 @@ uintmax_t *make_task_weights(struct task *tasks, int task_count, enum balance_ty
 	return task_weights;
 }
 
-struct worker *accept_workers(int worker_count, enum balance_type balance_type)
+struct worker *accept_workers(int worker_count, weight_t *worker_weights, enum balance_type balance_type)
 {
 	int listen_socket;
 	int i;
 	int enable;
 	struct worker *workers;
 	struct sockaddr_in addr;
+	char command[64];
 
 	workers = malloc(sizeof(struct worker) * worker_count);
 	if (workers == NULL) {
@@ -183,6 +186,15 @@ struct worker *accept_workers(int worker_count, enum balance_type balance_type)
 	bind(listen_socket, (struct sockaddr *)&addr, sizeof(addr));
 	listen(listen_socket, 10); /*Max 10 in queue*/
 	for (i = 0; i < worker_count; i++) {
+
+		/* spawn a new worker as a seperate OS process */
+		/* if fork returns 0 we are in a new child process */
+		if (fork() == 0) {
+			sprintf(command, "./worker %" PRIu8 "\n", worker_weights[i]);
+			system(command);
+			exit(EXIT_SUCCESS); /* exit the worker */
+		}
+
 		workers[i].completed_tasks = 0;
 		workers[i].sock = accept(listen_socket, NULL, 0);
 		workers[i].id = i;
