@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <inttypes.h>
+#include <signal.h>
 
 #include "shared.h"
 #include "settings.h"
@@ -15,6 +16,7 @@
 struct worker {
 	int sock; /* The socket used to communicate with the worker */
 	int id;
+	pid_t pid; /* The process id of the subprocess */
 	time_t done_time; /* The time that the worker was done working, and started doing nothing */
 	weight_t real_weight; /* The weight the worker says it has */
 	weight_t weight; /* The weight the algorithm uses */
@@ -40,6 +42,7 @@ struct worker *accept_workers(int worker_count, weight_t *worker_weights, enum b
 int main(int argc, char *argv[])
 {
 	int task_count;
+	int i;
 	uintmax_t *task_weights;
 	int *task_offsets;
 	result_t result;
@@ -88,6 +91,11 @@ int main(int argc, char *argv[])
 		      settings->task_limits.from,
 		      settings->task_limits.to,
 		      (end_clock - start_clock), settings->balance_type);
+
+	/* kill all the worker processes */
+	for (i = 0; i < settings->workers; i++) {
+		kill(workers[i].pid, SIGKILL);
+	}
 
 	/* Do some cleanup */
 	free(tasks);
@@ -228,6 +236,7 @@ struct worker *accept_workers(int worker_count, weight_t *worker_weights, enum b
 		workers[i].sock = accept(listen_socket, NULL, 0);
 		workers[i].completed_tasks = 0;
 		workers[i].id = i;
+		workers[i].pid = forkres;
 		workers[i].done_time = -1;
 		/* the weight is received as the first thing from the worker */
 		recv(workers[i].sock, &workers[i].real_weight, sizeof(weight_t), MSG_WAITALL);
@@ -242,8 +251,8 @@ struct worker *accept_workers(int worker_count, weight_t *worker_weights, enum b
 		printf("Accepted worker %d of %d\n", i+1, worker_count);
 	}
 
+	close(listen_socket);
 	return workers;
-	
 }
 
 /* group_tasks creates an array of integers, that is to be used as offsets into the task array.
