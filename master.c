@@ -21,13 +21,6 @@ struct worker {
 	int completed_tasks;
 };
 
-enum balance_type {
-	BALANCE_NONE,
-	BALANCE_ROUND,
-	BALANCE_WEIGHTED,
-	BALANCE__MAX
-};
-
 const char *algorithm_names[BALANCE__MAX] = {
 	"No balancing",
 	"Round robin",
@@ -64,7 +57,6 @@ int main(void)
 	struct task *tasks;
 	struct worker *workers;
 	struct settings *settings;
-	enum balance_type balance_type;
 
 /*	read_input(&primes_from, &primes_to, &task_size, &worker_count, &balance_type); */
 
@@ -72,26 +64,26 @@ int main(void)
 	settings_print(settings);
 
 	/* settings doesn't read balance type yet, so set it to weighted for now */
-	balance_type = BALANCE_WEIGHTED;
 	
 	tasks = make_tasks(settings->task_limits.from, settings->task_limits.to,
 			   settings->task_limits.task_number, &task_count);
 
 	printf("Task count: %d\n", task_count);
 	
-	task_weights = make_task_weights(tasks, task_count, balance_type);
-	workers = accept_workers(settings->workers, settings->worker_weights, balance_type);
+	task_weights = make_task_weights(tasks, task_count, settings->balance_type);
+	workers = accept_workers(settings->workers, settings->worker_weights,
+				 settings->balance_type);
 	task_offsets = group_tasks(task_weights, task_count, workers, settings->workers);
 
 	start_clock = time(NULL);
 	result = load_balance(tasks, task_count, task_offsets, workers,
-			      settings->workers, balance_type);
+			      settings->workers, settings->balance_type);
 	end_clock = time(NULL);
 
 	print_results(workers, settings->workers, result,
 		      settings->task_limits.from,
 		      settings->task_limits.to,
-		      (end_clock - start_clock), balance_type);
+		      (end_clock - start_clock), settings->balance_type);
 
 	free(settings->worker_weights);
 	free(settings);

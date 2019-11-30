@@ -38,6 +38,7 @@ void settings_print(struct settings * setting) {
 	printf("Settings:");
 	printf("\nIP: %s", setting->IP);
 	printf("\nPORT: %d", setting->PORT);
+	printf("\nBALANCETYPE: %d", setting->balance_type);
 	printf("\nTASKSIZE: %d", setting->task_limits.task_number);
 	printf("\nTASKRANGE: %d - %d", setting->task_limits.from, setting->task_limits.to);
 	printf("\nWORKERS: %d", setting->workers);
@@ -85,6 +86,8 @@ struct settings * load_settings_file() {
 			} else if (strcmp(option, "WORKERWEIGHT") == 0) {
 				setting_vars->worker_weights = calloc(setting_vars->workers, sizeof(weight_t));
 				settings_worker_weights(setting_vars->worker_weights, setting_vars->workers, str);
+			} else if (strcmp(option, "BALANCETYPE") == 0) {
+				sscanf(str, "BALANCETYPE=%d", (int *)&setting_vars->balance_type);
 			}
 		}
         

@@ -16,3 +16,10 @@ struct result {
 	result_t result;
 	uint16_t task_number;
 };
+
+enum balance_type {
+	BALANCE_NONE,
+	BALANCE_ROUND,
+	BALANCE_WEIGHTED,
+	BALANCE__MAX
+};
