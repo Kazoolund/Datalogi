@@ -1,7 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
 #define SETTINGS_FILE ".\\settings.txt"
 #define SETTING_OPTIONS 6
 
