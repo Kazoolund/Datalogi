@@ -62,8 +62,6 @@ int main(int argc, char *argv[])
 	settings = load_settings_file(argv[1]);
 	settings_print(settings);
 
-	/* settings doesn't read balance type yet, so set it to weighted for now */
-	
 	tasks = make_tasks(settings->task_limits.from, settings->task_limits.to,
 			   settings->task_limits.task_number, &task_count);
 
@@ -110,6 +108,7 @@ struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task
 	for (i = 0; i < *task_count; i++) {
 		tasks[i].task_number = i;
 		tasks[i].from = (i * task_size) + 1;
+
 		/*Makes sure the last task is not too big*/
 		if (i == *task_count - 1) {
 			tasks[i].to = primes_to;
@@ -286,7 +285,7 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 			}
 		}
 
-		if (completed_tasks % (task_count / 62) == 0) {
+		if (completed_tasks % ((task_count / 62)+1) == 0) {
 			printf("\u2588");
 			fflush(stdout);
 		}
