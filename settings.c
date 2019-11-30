@@ -86,7 +86,7 @@ struct settings * load_settings_file(const char *filename) {
 				sscanf(str, "WORKERS=%" SCNu16, &setting_vars->workers);
 			} else if (strcmp(option, "WORKERWEIGHT") == 0) {
 				setting_vars->worker_weights = calloc(setting_vars->workers, sizeof(weight_t));
-				settings_worker_weights(setting_vars->worker_weights, setting_vars->workers, str);
+				settings_worker_weights(setting_vars->worker_weights, str);
 			} else if (strcmp(option, "BALANCETYPE") == 0) {
 				sscanf(str, "BALANCETYPE=%d", (int *)&setting_vars->balance_type);
 			}
@@ -113,15 +113,14 @@ char * get_current_setting(char * string) {
 }
 
 /*
- * void settings_worker_weights(weight_t *weights, uint16_t workers,const char* str)
- * Takes 3 variables: weights, workers and str
+ * void settings_worker_weights(weight_t *weights, const char* str)
+ * Takes 2 variables: weights and str
  * weights represents the weight array for each worker expected based on the settings.txt file.
- * workers represents the amount of workers expected based on the settings.txt file.
  * str represents the weight string read from the settings.txt file.
  * 
  * The function sets all weights in the order specified in the settings.txt file. Left to right.
  */
-void settings_worker_weights(weight_t *weights, uint16_t workers, char* str) {
+void settings_worker_weights(weight_t *weights, char* str) {
 	char* temp = str;
 	const char delim[2] = ",";
 	int i = 0;

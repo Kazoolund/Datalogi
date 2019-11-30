@@ -9,5 +9,5 @@ struct settings {
 
 struct settings *load_settings_file(const char *filename);
 void  settings_print(struct settings *setting);
-void  settings_worker_weights(weight_t *weights, uint16_t workers, char *str);
+void  settings_worker_weights(weight_t *weights, char *str);
 char *get_current_setting(char *string);
