@@ -21,13 +21,6 @@ struct worker {
 	int completed_tasks; /* The amount of tasks the worker has done */
 };
 
-/* A list of names for the different loadbalancing algorithms. */
-const char *algorithm_names[BALANCE__MAX] = {
-	"No balancing",
-	"Round robin",
-	"Weighted least"
-};
-
 /* Function prototypes */
 int *group_tasks(uintmax_t *task_weights, int task_count, struct worker *workers, int worker_count);
 void assign_task(struct worker worker, struct task *tasks, int *task_offsets, int task_count,

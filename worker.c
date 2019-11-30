@@ -34,11 +34,6 @@ int main(int argc, char *argv[]) {
 	
 	sscanf(argv[ARGV_WEIGHT], "%" SCNu8, &worker_weight);
 
-	if (worker_weight < 0){
-		printf("no input given for weight exiting....\n");
-		exit(EXIT_FAILURE);
-	}
-
 	/* initialse socket */
 	sock = socket(AF_INET, SOCK_STREAM, 0); /* Create client socket */
 
@@ -60,14 +55,13 @@ void socket_run_time(int sock, weight_t weight){
 	struct result results;
 	struct task buffer;
 	ssize_t numRead;
-	int connection_status;
 	int initial_send;
 
 	remote_address.sin_family = AF_INET;
 	remote_address.sin_addr.s_addr = inet_addr(REMOTE_IP);
 	remote_address.sin_port = htons(LOADBALANCER_PORT);
 	/* Try to connect to master */
-	connection_status = connect_socket_n(sock, remote_address);
+	connect_socket_n(sock, remote_address);
 	/* send weight to master */
 	initial_send = send(sock, &weight, sizeof(weight_t), 0);
 

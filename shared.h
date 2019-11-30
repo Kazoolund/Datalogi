@@ -2,6 +2,7 @@
 
 #define LOADBALANCER_PORT 5000
 
+extern const char *algorithm_names[]; /* defined in shared.c */
 
 typedef uint8_t  weight_t;
 typedef uint16_t result_t;

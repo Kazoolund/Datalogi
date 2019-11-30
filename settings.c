@@ -39,7 +39,7 @@ void settings_print(struct settings * setting) {
 	printf("Settings:");
 	printf("\nIP: %s", setting->IP);
 	printf("\nPORT: %d", setting->PORT);
-	printf("\nBALANCETYPE: %d", setting->balance_type);
+	printf("\nBALANCETYPE: %s", algorithm_names[setting->balance_type]);
 	printf("\nTASKSIZE: %d", setting->task_limits.task_number);
 	printf("\nTASKRANGE: %d - %d", setting->task_limits.from, setting->task_limits.to);
 	printf("\nWORKERS: %d", setting->workers);
