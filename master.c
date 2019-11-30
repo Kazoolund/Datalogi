@@ -192,7 +192,7 @@ struct worker *accept_workers(int worker_count, weight_t *worker_weights, enum b
 	/* Setup the address struct that specifies where the socket will bind itself to */
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(LOADBALANCER_PORT);
-	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	addr.sin_addr.s_addr = inet_addr(LOADBALANCER_IP);
 
 	/* Create the socket */
 	listen_socket = socket(AF_INET, SOCK_STREAM, 0);

@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #define LOADBALANCER_PORT 5000
+#define LOADBALANCER_IP "127.0.0.1"
 
 extern const char *algorithm_names[]; /* defined in shared.c */
 

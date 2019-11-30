@@ -13,9 +13,6 @@
 
 #define ARGV_WEIGHT 1
 
-#define REMOTE_IP "127.0.0.1"
-
-
 struct result do_task(struct task new_task, weight_t weight);
 int connect_socket_n(int sock, struct sockaddr_in remote_address );
 int send_result(int sock, struct result send_message);
@@ -58,7 +55,7 @@ void socket_run_time(int sock, weight_t weight){
 	int initial_send;
 
 	remote_address.sin_family = AF_INET;
-	remote_address.sin_addr.s_addr = inet_addr(REMOTE_IP);
+	remote_address.sin_addr.s_addr = inet_addr(LOADBALANCER_IP);
 	remote_address.sin_port = htons(LOADBALANCER_PORT);
 	/* Try to connect to master */
 	connect_socket_n(sock, remote_address);
