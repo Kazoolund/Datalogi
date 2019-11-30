@@ -8,8 +8,8 @@
 #include "settings.h"
 
 /* How to use:
- * Simply initialize a struct settings variable with load_settings_file()
- * Eksample: struct settings * settings_variable = load_settings_file();
+ * Simply initialize a struct settings variable with load_settings_file(filename)
+ * Example: struct settings * settings_variable = load_settings_file(filename);
  * 
  * Structure:
  *          char IP[16];
@@ -19,7 +19,8 @@
  *                  uint32_t to;
  *                  uint16_t task_number;
  *          uint16_t workers;
- *          uint16_t *worker_weights;
+ *          weight_t *worker_weights;
+ *          enum balance_type balance_type;
  * 
  * NOTE: Remember to free() the struct pointer AND the weights array pointer when it isn't in use anymore.
  *       free(setting->worker_weights);
@@ -59,9 +60,9 @@ void settings_print(struct settings * setting) {
  *       free(setting->worker_weights);
  *       free(setting);
  */
-struct settings * load_settings_file() {
+struct settings * load_settings_file(const char *filename) {
 	struct settings * setting_vars = malloc(sizeof(struct settings));
-	FILE * file_pointer = fopen(SETTINGS_FILE, "r");
+	FILE * file_pointer = fopen(filename, "r");
 	char str[50];
 
 

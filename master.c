@@ -42,7 +42,7 @@ void print_delimiter(int position);
 void print_header(int number_of_workers, int completed_tasks, time_t total_time, enum balance_type algo);
 void print_worker_result(struct worker worker, int work_number);
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	int task_count;
 	uintmax_t *task_weights;
@@ -54,7 +54,12 @@ int main(void)
 	struct worker *workers;
 	struct settings *settings;
 
-	settings = load_settings_file();
+	if (argc != 2) {
+		printf("Usage: %s settings-file.txt\n", argv[0]);
+		exit(EXIT_SUCCESS);
+	}
+
+	settings = load_settings_file(argv[1]);
 	settings_print(settings);
 
 	/* settings doesn't read balance type yet, so set it to weighted for now */
