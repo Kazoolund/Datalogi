@@ -6,7 +6,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
+
 #include "shared.h"
+#include "settings.h"
 
 struct worker {
 	int sock;
@@ -47,10 +49,10 @@ void print_worker_result(struct worker worker, int work_number);
 
 int main(void)
 {
-	int primes_from;
+/*	int primes_from;
 	int primes_to;
 	int task_size;
-	int worker_count;
+	int worker_count; */
 	int task_count;
 	uintmax_t *task_weights;
 	int *task_offsets;
@@ -59,24 +61,38 @@ int main(void)
 	time_t end_clock;
 	struct task *tasks;
 	struct worker *workers;
+	struct settings *settings;
 	enum balance_type balance_type;
 
-	read_input(&primes_from, &primes_to, &task_size, &worker_count, &balance_type);
-	tasks = make_tasks(primes_from, primes_to, task_size, &task_count);
+/*	read_input(&primes_from, &primes_to, &task_size, &worker_count, &balance_type); */
+
+	settings = load_settings_file();
+	settings_print(settings);
+
+	/* settings doesn't read balance type yet, so set it to weighted for now */
+	balance_type = BALANCE_WEIGHTED;
+	
+	tasks = make_tasks(settings->task_limits.from, settings->task_limits.to,
+			   settings->task_limits.task_number, &task_count);
 
 	printf("Task count: %d\n", task_count);
 	
 	task_weights = make_task_weights(tasks, task_count, balance_type);
-	workers = accept_workers(worker_count, balance_type);
-	task_offsets = group_tasks(task_weights, task_count, workers, worker_count);
+	workers = accept_workers(settings->workers, balance_type);
+	task_offsets = group_tasks(task_weights, task_count, workers, settings->workers);
 
 	start_clock = time(NULL);
-	result = load_balance(tasks, task_count, task_offsets, workers, worker_count, balance_type);
+	result = load_balance(tasks, task_count, task_offsets, workers,
+			      settings->workers, balance_type);
 	end_clock = time(NULL);
 
-	print_results(workers, worker_count, result, primes_from, primes_to,
+	print_results(workers, settings->workers, result,
+		      settings->task_limits.from,
+		      settings->task_limits.to,
 		      (end_clock - start_clock), balance_type);
-	
+
+	free(settings->worker_weights);
+	free(settings);
 	return 0;
 }
 

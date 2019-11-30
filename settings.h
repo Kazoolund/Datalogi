@@ -1,4 +1,4 @@
-#define SETTINGS_FILE ".\\settings.txt"
+#define SETTINGS_FILE "./settings.txt"
 #define SETTING_OPTIONS 6
 
 struct settings {

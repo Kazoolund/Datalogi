@@ -35,7 +35,7 @@
  * Prints out all active settings in the variable.
  */
 void settings_print(struct settings * setting) {
-	printf("Settings: \n");
+	printf("Settings:");
 	printf("\nIP: %s", setting->IP);
 	printf("\nPORT: %d", setting->PORT);
 	printf("\nTASKSIZE: %d", setting->task_limits.task_number);
@@ -45,6 +45,7 @@ void settings_print(struct settings * setting) {
 	{
 		printf("\nWORKER %d Weight: %d", i, setting->worker_weights[i]);
 	}
+	printf("\n");
 }
 
 /*
