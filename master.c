@@ -44,10 +44,6 @@ void print_worker_result(struct worker worker, int work_number);
 
 int main(void)
 {
-/*	int primes_from;
-	int primes_to;
-	int task_size;
-	int worker_count; */
 	int task_count;
 	uintmax_t *task_weights;
 	int *task_offsets;
@@ -57,8 +53,6 @@ int main(void)
 	struct task *tasks;
 	struct worker *workers;
 	struct settings *settings;
-
-/*	read_input(&primes_from, &primes_to, &task_size, &worker_count, &balance_type); */
 
 	settings = load_settings_file();
 	settings_print(settings);
@@ -88,19 +82,6 @@ int main(void)
 	free(settings->worker_weights);
 	free(settings);
 	return 0;
-}
-
-void read_input(int *primes_from, int *primes_to, int *task_size, int *worker_count, enum balance_type *balance_type)
-{
-	/*Only takes input, doesn't check it.*/
-	printf("What type of balancing do you want? (0 = none, 1 = round robin, 2 = weighted least connections): ");
-	scanf("%d", (int *)balance_type);
-	printf("Enter the range of numbers you want to check for primes (ex. 1 1000000): ");
-	scanf("%d %d", primes_from, primes_to);
-	printf("Enter task size (ex. 100): ");
-	scanf("%d", task_size);
-	printf("Enter amount of workers: ");
-	scanf("%d", worker_count);
 }
 
 struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task_count)
