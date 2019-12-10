@@ -23,7 +23,6 @@ result_t is_prime(uint32_t from, uint32_t to) {
 			if (division != 1 && division != number_to_check && number_to_check % division == 0)
 				isprime = 0;
 		}
-
 		if (isprime && number_to_check != 1){
 /*			printf("Prime: %d\n", number_to_check); */
 			count++;
@@ -50,9 +49,8 @@ result_t weighted_prime_worker(weight_t weight, struct task new_task) {
 	double time_elapsed = timespec_to_double(end_time) - timespec_to_double(start_time);
 
 	if (weight < MAX_WEIGHT) {
-		double new_time = (MAX_WEIGHT/weight) * time_elapsed;
+		double new_time = (MAX_WEIGHT/(double)weight) * time_elapsed;
 		double sleeptime = new_time - time_elapsed;
-
 		sleep_ms(sleeptime * MILLISECOND_TO_SECOND);
 
 	}
