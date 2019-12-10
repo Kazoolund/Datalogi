@@ -1,0 +1,3 @@
+Average for test_results/weighted100-1-workers.txt (5 runs)
+	Average total runtime 62.2988
+	Average wasted time 0

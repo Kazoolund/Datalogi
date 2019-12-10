@@ -8,9 +8,13 @@ master: master.c shared.c settings.c shared.h settings.h
 worker: worker.c prime.c shared.c shared.h
 	$(CC) $(CFLAGS) worker.c prime.c shared.c -o worker
 
-.PHONY: clean tests
+.PHONY: clean tests average
 clean:
 	rm -rf master worker
 
 tests: master worker
 	sh run_tests.sh
+	sh average_tests.sh
+
+average:
+	sh average_tests.sh

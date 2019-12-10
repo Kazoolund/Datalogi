@@ -1,0 +1,3 @@
+Average for test_results/no-balance10000.txt (5 runs)
+	Average total runtime 37.1174
+	Average wasted time 14.3979

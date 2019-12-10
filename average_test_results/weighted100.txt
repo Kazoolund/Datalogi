@@ -1,0 +1,3 @@
+Average for test_results/weighted100.txt (5 runs)
+	Average total runtime 24.9762
+	Average wasted time 0.0247333

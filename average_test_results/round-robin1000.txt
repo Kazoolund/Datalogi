@@ -1,0 +1,3 @@
+Average for test_results/round-robin1000.txt (5 runs)
+	Average total runtime 24.3246
+	Average wasted time 0.818267
