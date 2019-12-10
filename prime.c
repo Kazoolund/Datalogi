@@ -1,3 +1,4 @@
+#include <time.h>
 #include "shared.h"
 #include "prime.h"
 /*
@@ -40,10 +41,13 @@ result_t is_prime(uint32_t from, uint32_t to) {
  * Returns the prime count from the lower to upper limit.
  */
 result_t weighted_prime_worker(weight_t weight, struct task new_task) {
-	clock_t start_time = clock();
+	struct timespec start_time;
+	struct timespec end_time;
+
+	clock_gettime(CLOCK_MONOTONIC, &start_time);
 	result_t prime_count = is_prime(new_task.from, new_task.to);
-	clock_t end_time = clock();
-	double time_elapsed = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+	clock_gettime(CLOCK_MONOTONIC, &end_time);
+	double time_elapsed = timespec_to_double(end_time) - timespec_to_double(start_time);
 
 	if (weight < MAX_WEIGHT) {
 		double new_time = (MAX_WEIGHT/weight) * time_elapsed;
@@ -61,13 +65,16 @@ result_t weighted_prime_worker(weight_t weight, struct task new_task) {
  * double msec represents the milliseconds that needs to elapse before the program returns
  */
 void sleep_ms(double msec) {
-	clock_t start_time = clock();
+	struct timespec start_time;
+	struct timespec current_time;
+
+	clock_gettime(CLOCK_MONOTONIC, &start_time);
 	double time_elapsed = 0.00;
 
 	do
 	{
-		clock_t current_clock = clock();
-		time_elapsed = (double)(current_clock - start_time) / CLOCKS_PER_SEC * MILLISECOND_TO_SECOND;
+		clock_gettime(CLOCK_MONOTONIC, &current_time);
+		time_elapsed = timespec_to_double(current_time) - timespec_to_double(start_time);
 	} while ( time_elapsed < msec);
 
 }
