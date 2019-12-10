@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <time.h>
 
 #define LOADBALANCER_PORT 5000
 #define LOADBALANCER_IP "127.0.0.1"
@@ -25,3 +26,5 @@ enum balance_type {
 	BALANCE_WEIGHTED,
 	BALANCE__MAX
 };
+
+double timespec_to_double(struct timespec t);

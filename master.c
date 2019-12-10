@@ -17,7 +17,7 @@ struct worker {
 	int sock; /* The socket used to communicate with the worker */
 	int id;
 	pid_t pid; /* The process id of the subprocess */
-	time_t done_time; /* The time that the worker was done working, and started doing nothing */
+	struct timespec done_time; /* The time that the worker was done working, and started doing nothing */
 	weight_t real_weight; /* The weight the worker says it has */
 	weight_t weight; /* The weight the algorithm uses */
 	int completed_tasks; /* The amount of tasks the worker has done */
@@ -30,9 +30,9 @@ void assign_task(struct worker worker, struct task *tasks, int *task_offsets, in
 void assign_round_robin_task(struct worker worker, struct task *tasks, int task_count, int worker_count, int *completed, int *assigned);
 void read_input(int *primes_from, int *primes_to, int *task_size, int *worker_count, enum balance_type *balance_type);
 void read_result(struct worker worker, result_t *results, int *completed);
-void print_results(struct worker *workers, int number_of_workers, int number_of_primes, int primes_from, int primes_to, time_t total_time, enum balance_type algo);
+void print_results(struct worker *workers, int number_of_workers, int number_of_primes, int primes_from, int primes_to, double total_time, enum balance_type algo);
 void print_delimiter(int position);
-void print_header(int number_of_workers, int completed_tasks, time_t total_time, enum balance_type algo);
+void print_header(int number_of_workers, int completed_tasks, double total_time, enum balance_type algo);
 void print_worker_result(struct worker worker, int work_number);
 result_t load_balance(struct task *tasks, int task_count, int *task_offsets, struct worker *workers, int worker_count, enum balance_type balance_type);
 uintmax_t *make_task_weights(struct task *tasks, int task_count, enum balance_type balance_type);
@@ -43,11 +43,12 @@ int main(int argc, char *argv[])
 {
 	int task_count;
 	int i;
+	double total_time_used;
 	uintmax_t *task_weights;
 	int *task_offsets;
 	result_t result;
-	time_t start_clock;
-	time_t end_clock;
+	struct timespec start_clock;
+	struct timespec end_clock;
 	struct task *tasks;
 	struct worker *workers;
 	struct settings *settings;
@@ -81,16 +82,18 @@ int main(int argc, char *argv[])
 	task_offsets = group_tasks(task_weights, task_count, workers, settings->workers);
 
 	/* Get the time before the actual balancing happens, then do the balancing and then get the time again */
-	start_clock = time(NULL);
+	clock_gettime(CLOCK_MONOTONIC, &start_clock);
 	result = load_balance(tasks, task_count, task_offsets, workers,
 			      settings->workers, settings->balance_type);
-	end_clock = time(NULL);
+	clock_gettime(CLOCK_MONOTONIC, &end_clock);
+
+	total_time_used = timespec_to_double(end_clock) - timespec_to_double(start_clock);
 
 	/* Finally, print the results and information about the balancing in a nice table */
 	print_results(workers, settings->workers, result,
 		      settings->task_limits.from,
 		      settings->task_limits.to,
-		      (end_clock - start_clock), settings->balance_type);
+		      total_time_used, settings->balance_type);
 
 	/* kill all the worker processes */
 	for (i = 0; i < settings->workers; i++) {
@@ -237,7 +240,7 @@ struct worker *accept_workers(int worker_count, weight_t *worker_weights, enum b
 		workers[i].completed_tasks = 0;
 		workers[i].id = i;
 		workers[i].pid = forkres;
-		workers[i].done_time = -1;
+		clock_gettime(CLOCK_MONOTONIC, &workers[i].done_time);
 		/* the weight is received as the first thing from the worker */
 		recv(workers[i].sock, &workers[i].real_weight, sizeof(weight_t), MSG_WAITALL);
 
@@ -392,7 +395,7 @@ result_t load_balance(struct task *tasks, int task_count, int *task_offsets, str
 
 					/* Set the done_time to now, because as far as we know, this is the last time we
 					 * have heard from this worker */
-					workers[i].done_time = time(NULL);
+					clock_gettime(CLOCK_MONOTONIC, &workers[i].done_time);
 
 					/* based on the balancing algorithm, assign a new task */
 					if (balance_type == BALANCE_ROUND) {
@@ -555,25 +558,27 @@ void print_delimiter(int position){
 }
 
 /* print_header prints general information about the run of the program */
-void print_header(int number_of_workers, int completed_tasks, time_t total_time, enum balance_type algo){
+void print_header(int number_of_workers, int completed_tasks, double total_time, enum balance_type algo){
 	print_delimiter(0);
 	printf("\u2502 %-15s \u2502 %-15s \u2502 %-15s \u2502 %-15s \u2502\n", "Workers", "Total tasks", "Total runtime", "Algorithm");
 	print_delimiter(1);
-	printf("\u2502 %15d \u2502 %15d \u2502 %11ld sec \u2502 %-15s \u2502\n", number_of_workers, completed_tasks, total_time, algorithm_names[algo]);
+	printf("\u2502 %15d \u2502 %15d \u2502 %11.3f sec \u2502 %-15s \u2502\n", number_of_workers, completed_tasks, total_time, algorithm_names[algo]);
 	print_delimiter(2);
 }
 
 /* print_worker_result prints information about a single worker */
 void print_worker_result(struct worker worker, int work_number){
-	time_t time_wasted;
+	struct timespec now;
+	double time_wasted;
 	print_delimiter(1);
-
-	time_wasted = time(NULL) - worker.done_time;
-	printf("\u2502 %15d \u2502 %15d \u2502 %15d \u2502 %11ld sec \u2502\n", work_number, worker.real_weight, worker.completed_tasks, time_wasted);
+	
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	time_wasted = timespec_to_double(now) - timespec_to_double(worker.done_time);
+	printf("\u2502 %15d \u2502 %15d \u2502 %15d \u2502 %11.3f sec \u2502\n", work_number, worker.real_weight, worker.completed_tasks, time_wasted);
 }
 
 /* print_results prints all the usefull information about the program, such as worker information */
-void print_results(struct worker *workers, int number_of_workers, int number_of_primes, int primes_from, int primes_to, time_t total_time, enum balance_type algo) {
+void print_results(struct worker *workers, int number_of_workers, int number_of_primes, int primes_from, int primes_to, double total_time, enum balance_type algo) {
 	int i;
 	int completed_tasks;
 

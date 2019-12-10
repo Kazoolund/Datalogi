@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -std=c99 -g -D_POSIX_SOURCE
+CFLAGS = -Wall -Wextra -std=c99 -g -D_POSIX_SOURCE -D_POSIX_C_SOURCE=199309L
 
 all: worker master
 
