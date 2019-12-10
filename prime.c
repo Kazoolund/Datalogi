@@ -51,18 +51,18 @@ result_t weighted_prime_worker(weight_t weight, struct task new_task) {
 	if (weight < MAX_WEIGHT) {
 		double new_time = (MAX_WEIGHT/(double)weight) * time_elapsed;
 		double sleeptime = new_time - time_elapsed;
-		sleep_ms(sleeptime * MILLISECOND_TO_SECOND);
+		sleep(sleeptime);
 
 	}
 	return prime_count;
 }
 
 /* Custom sleep function for more varity
- * void sleep_ms(double msec)
- * Takes 1 input: msec
+ * void sleep(double msec)
+ * Takes 1 input: sec
  * double msec represents the milliseconds that needs to elapse before the program returns
  */
-void sleep_ms(double msec) {
+void sleep(double sec) {
 	struct timespec start_time;
 	struct timespec current_time;
 
@@ -73,6 +73,5 @@ void sleep_ms(double msec) {
 	{
 		clock_gettime(CLOCK_MONOTONIC, &current_time);
 		time_elapsed = timespec_to_double(current_time) - timespec_to_double(start_time);
-	} while ( time_elapsed < msec);
-
+	} while ( time_elapsed < sec);
 }
