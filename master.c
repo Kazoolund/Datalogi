@@ -146,7 +146,7 @@ struct task *make_tasks(int primes_from, int primes_to, int task_size, int *task
 		if (i == *task_count - 1) {
 			tasks[i].to = primes_to;
 		} else {
-			tasks[i].to = (i + 1) * task_size;			
+			tasks[i].to = (i + 1) * task_size + primes_from - 1;
 		}
 	}
 	return tasks;
